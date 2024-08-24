@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'dart:math';
+import 'dart:async';
 import 'input.dart';
 import 'timeline.dart';
-import 'settings.dart';  // 新しく追加
+import 'dart:ui' as ui;
+import 'settings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,14 +86,16 @@ class ClockScreen extends StatefulWidget {
 
 class _ClockScreenState extends State<ClockScreen> {
   DateTime currentDate = DateTime.now();
+  bool showColon = true;
+  late Timer timer;
 
   @override
   void initState() {
     super.initState();
-    // 1秒ごとに現在時刻を更新
-    Future.delayed(Duration(seconds: 1), () {
+    timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         currentDate = DateTime.now();
+        showColon = !showColon;
       });
     });
   }
@@ -216,6 +221,23 @@ class ClockPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, paint);
 
+    // 0を円の真上の内側に描画
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '0',
+        style: TextStyle(color: Colors.black, fontSize: 16),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        center.dx - textPainter.width / 2,
+        center.dy - radius + 15,
+      ),
+    );
+
     for (int i = 0; i < 24; i++) {
       final angle = i * (2 * pi / 24) - pi / 2;
       final hourMarkLength = i % 6 == 0 ? 15.0 : 5.0;
@@ -237,7 +259,7 @@ class ClockPainter extends CustomPainter {
             text: i.toString(),
             style: TextStyle(color: Colors.black, fontSize: 16),
           ),
-          textDirection: TextDirection.ltr,
+          textDirection: ui.TextDirection.ltr,
         );
         textPainter.layout();
         textPainter.paint(
