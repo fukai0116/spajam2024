@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
 
 class InputPage extends StatefulWidget {
   @override
@@ -9,6 +11,9 @@ class _InputPageState extends State<InputPage> {
   String eventName = '';
   String memo = '';
   Color selectedColor = Colors.purple;
+  DateTime selectedDate = DateTime.now();
+  TimeOfDay startTime = TimeOfDay.now();
+  TimeOfDay endTime = TimeOfDay.now().replacing(hour: TimeOfDay.now().hour + 1);
 
   @override
   Widget build(BuildContext context) {
@@ -20,12 +25,17 @@ class _InputPageState extends State<InputPage> {
         ),
         title: Text('新しい予定'),
         actions: [
-          TextButton(
-            child: Text('保存', style: TextStyle(color: Colors.white)),
-            onPressed: () {
-              // TODO: 保存ロジックを実装
-              Navigator.of(context).pop();
-            },
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FloatingActionButton(
+              child: Icon(Icons.save),
+              onPressed: () {
+                // TODO: 保存ロジックを実装
+                Navigator.of(context).pop();
+              },
+              backgroundColor: Colors.blue,
+              mini: true,
+            ),
           ),
         ],
       ),
@@ -34,7 +44,10 @@ class _InputPageState extends State<InputPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('2024/9/2(月)', style: TextStyle(fontSize: 18)),
+            Text(
+              DateFormat('yyyy/M/d(E)', 'ja_JP').format(selectedDate),
+              style: TextStyle(fontSize: 18),
+            ),
             SizedBox(height: 20),
             Text('予定名'),
             TextField(
@@ -43,6 +56,46 @@ class _InputPageState extends State<InputPage> {
                 border: UnderlineInputBorder(),
               ),
               onChanged: (value) => setState(() => eventName = value),
+            ),
+            SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('開始時刻'),
+                      InkWell(
+                        onTap: () => _selectTime(context, true),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            border: UnderlineInputBorder(),
+                          ),
+                          child: Text(startTime.format(context)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('終了時刻'),
+                      InkWell(
+                        onTap: () => _selectTime(context, false),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            border: UnderlineInputBorder(),
+                          ),
+                          child: Text(endTime.format(context)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 20),
             Text('メモ'),
@@ -64,6 +117,22 @@ class _InputPageState extends State<InputPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _selectTime(BuildContext context, bool isStart) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? startTime : endTime,
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          startTime = picked;
+        } else {
+          endTime = picked;
+        }
+      });
+    }
   }
 }
 
