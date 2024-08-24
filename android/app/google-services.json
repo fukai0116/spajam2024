@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "110789853091",
+    "project_id": "spajam2024-89f47",
+    "storage_bucket": "spajam2024-89f47.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:110789853091:android:04d7e2cc702ba3dd67a416",
+        "android_client_info": {
+          "package_name": "com.example.spajam2024"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBU_XfOq9VJKiMqaFRH41Mtou2xGGLgOS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
