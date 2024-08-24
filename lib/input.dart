@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+import 'event.dart';
+import 'event_storage_service.dart';
 
 class InputPage extends StatefulWidget {
   @override
@@ -8,6 +10,8 @@ class InputPage extends StatefulWidget {
 }
 
 class _InputPageState extends State<InputPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _storageService = EventStorageService();
   String eventName = '';
   String memo = '';
   Color selectedColor = Colors.purple;
@@ -29,91 +33,97 @@ class _InputPageState extends State<InputPage> {
             padding: const EdgeInsets.all(8.0),
             child: FloatingActionButton(
               child: Icon(Icons.save),
-              onPressed: () {
-                // TODO: 保存ロジックを実装
-                Navigator.of(context).pop();
-              },
+              onPressed: _saveEvent,
               backgroundColor: Colors.blue,
               mini: true,
             ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat('yyyy/M/d(E)', 'ja_JP').format(selectedDate),
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 20),
-            Text('予定名'),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'タップして入力',
-                border: UnderlineInputBorder(),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                DateFormat('yyyy/M/d(E)', 'ja_JP').format(selectedDate),
+                style: TextStyle(fontSize: 18),
               ),
-              onChanged: (value) => setState(() => eventName = value),
-            ),
-            SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('開始時刻'),
-                      InkWell(
-                        onTap: () => _selectTime(context, true),
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            border: UnderlineInputBorder(),
-                          ),
-                          child: Text(startTime.format(context)),
-                        ),
-                      ),
-                    ],
-                  ),
+              SizedBox(height: 20),
+              Text('予定名'),
+              TextFormField(
+                decoration: InputDecoration(
+                  hintText: 'タップして入力',
+                  border: UnderlineInputBorder(),
                 ),
-                SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('終了時刻'),
-                      InkWell(
-                        onTap: () => _selectTime(context, false),
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            border: UnderlineInputBorder(),
-                          ),
-                          child: Text(endTime.format(context)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-            Text('メモ'),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'タップして入力',
-                border: UnderlineInputBorder(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '予定名を入力してください';
+                  }
+                  return null;
+                },
+                onSaved: (value) => eventName = value!,
               ),
-              onChanged: (value) => setState(() => memo = value),
-            ),
-            SizedBox(height: 20),
-            Text('色の選択'),
-            SizedBox(height: 10),
-            RGBColorPicker(
-              selectedColor: selectedColor,
-              onColorChanged: (color) => setState(() => selectedColor = color),
-            ),
-          ],
+              SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('開始時刻'),
+                        InkWell(
+                          onTap: () => _selectTime(context, true),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              border: UnderlineInputBorder(),
+                            ),
+                            child: Text(startTime.format(context)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('終了時刻'),
+                        InkWell(
+                          onTap: () => _selectTime(context, false),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              border: UnderlineInputBorder(),
+                            ),
+                            child: Text(endTime.format(context)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              Text('メモ'),
+              TextFormField(
+                decoration: InputDecoration(
+                  hintText: 'タップして入力',
+                  border: UnderlineInputBorder(),
+                ),
+                onSaved: (value) => memo = value!,
+              ),
+              SizedBox(height: 20),
+              Text('色の選択'),
+              SizedBox(height: 10),
+              RGBColorPicker(
+                selectedColor: selectedColor,
+                onColorChanged: (color) => setState(() => selectedColor = color),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -132,6 +142,34 @@ class _InputPageState extends State<InputPage> {
           endTime = picked;
         }
       });
+    }
+  }
+
+  void _saveEvent() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      
+      final event = Event(
+        id: Uuid().v4(),
+        name: eventName,
+        date: selectedDate,
+        startTime: startTime,
+        endTime: endTime,
+        memo: memo,
+        color: selectedColor,
+      );
+
+      try {
+        await _storageService.saveEvent(event);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('イベントが保存されました')),
+        );
+        Navigator.of(context).pop();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('イベントの保存に失敗しました')),
+        );
+      }
     }
   }
 }
@@ -171,8 +209,7 @@ class _RGBColorPickerState extends State<RGBColorPicker> {
             Expanded(
               child: Container(
                 height: 50,
-                color:
-                    Color.fromRGBO(red.round(), green.round(), blue.round(), 1),
+                color: Color.fromRGBO(red.round(), green.round(), blue.round(), 1),
               ),
             ),
           ],
@@ -194,8 +231,7 @@ class _RGBColorPickerState extends State<RGBColorPicker> {
     );
   }
 
-  Widget buildColorSlider(
-      String label, double value, Color color, ValueChanged<double> onChanged) {
+  Widget buildColorSlider(String label, double value, Color color, ValueChanged<double> onChanged) {
     return Row(
       children: [
         Container(
