@@ -37,9 +37,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: Text('${_events.length}件のイベントが保存されています'),
           ),
           Divider(),
-          ..._events.map((event) => ListTile(
+          ..._events.map((event) => ExpansionTile(
                 title: Text(event.name),
-                subtitle: Text('${event.date.toString()} ${event.startTime.format(context)} - ${event.endTime.format(context)}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${event.date.toString()} ${event.startTime.format(context)} - ${event.endTime.format(context)}'),
+                    Text(
+                      '応援メッセージ: ${_extractSupportMessage(event.memo)}',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('メモ:'),
+                        Text(event.memo),
+                      ],
+                    ),
+                  ),
+                ],
                 trailing: IconButton(
                   icon: Icon(Icons.delete),
                   onPressed: () async {
@@ -79,5 +103,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  String _extractSupportMessage(String memo) {
+    final parts = memo.split('\n\n応援メッセージ: ');
+    if (parts.length > 1) {
+      return parts.last;
+    }
+    return '応援メッセージが見つかりません';
   }
 }
