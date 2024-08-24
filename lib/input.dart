@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:math';
 import 'event.dart';
 import 'event_storage_service.dart';
 
@@ -18,6 +19,26 @@ class _InputPageState extends State<InputPage> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay startTime = TimeOfDay.now();
   TimeOfDay endTime = TimeOfDay.now().replacing(hour: TimeOfDay.now().hour + 1);
+
+  // 事前に用意した応援メッセージのリスト
+  final List<String> supportMessages = [
+    'がんばってください！',
+    '素晴らしい一日になりますように！',
+    'あなたならできる！',
+    '最高の結果を期待しています！',
+    '頑張る姿を応援しています！',
+    '目標達成を信じています！',
+    'あなたの成功を祈っています！',
+    'ポジティブな気持ちで頑張りましょう！',
+    '全力で応援しています！',
+    'きっと素晴らしい結果が待っています！',
+  ];
+
+  // ランダムな応援メッセージを取得する関数
+  String getRandomSupportMessage() {
+    final random = Random();
+    return supportMessages[random.nextInt(supportMessages.length)];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,14 +169,15 @@ class _InputPageState extends State<InputPage> {
   void _saveEvent() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      
+
+      final supportMessage = getRandomSupportMessage();
       final event = Event(
         id: Uuid().v4(),
         name: eventName,
         date: selectedDate,
         startTime: startTime,
         endTime: endTime,
-        memo: memo,
+        memo: memo + '\n\n応援メッセージ: ' + supportMessage,
         color: selectedColor,
       );
 
@@ -174,6 +196,7 @@ class _InputPageState extends State<InputPage> {
   }
 }
 
+// RGBColorPickerクラスは変更なし
 class RGBColorPicker extends StatefulWidget {
   final Color selectedColor;
   final ValueChanged<Color> onColorChanged;
