@@ -38,4 +38,9 @@ class EventStorageService {
       await prefs.setString(_keyEvents, jsonEncode(events.map((e) => e.toJson()).toList()));
     }
   }
+
+  Future<void> deleteAllEvents() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyEvents);
+  }
 }
