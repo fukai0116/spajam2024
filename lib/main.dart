@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'dart:math';
 import 'input.dart';
 import 'timeline.dart';
+import 'settings.dart';  // 新しく追加
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -118,7 +119,10 @@ class _ClockScreenState extends State<ClockScreen> {
           IconButton(
             icon: Icon(Icons.settings, color: Colors.grey),
             onPressed: () {
-              // 設定機能の実装
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsScreen()),
+              );
             },
           ),
           Text(
