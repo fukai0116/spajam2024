@@ -273,7 +273,7 @@ class _ClockScreenState extends State<ClockScreen> {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: nextEvent!.color.withOpacity(0.7), // ここを変更
+                color: nextEvent!.color.withOpacity(0.7),
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -340,16 +340,24 @@ class _ClockScreenState extends State<ClockScreen> {
     }
   }
 
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          SizedBox(height: 40),
-          buildDateSelector(),
-          Expanded(child: buildClock()),
+          Column(
+            children: [
+              SizedBox(height: 40),
+              buildDateSelector(),
+              Expanded(child: buildClock()),
+            ],
+          ),
           if (currentSupportMessage != null)
-            AnimatedSupportMessage(message: currentSupportMessage!),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 20, // ここでメッセージの位置を調整
+              child: AnimatedSupportMessage(message: currentSupportMessage!),
+            ),
         ],
       ),
       floatingActionButton: buildAddButton(),
@@ -406,14 +414,17 @@ class _ClockScreenState extends State<ClockScreen> {
   }
 
   Widget buildAddButton() {
-    return FloatingActionButton(
-      child: Icon(Icons.add),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => InputPage()),
-        ).then((_) => _loadEvents());
-      },
+    return Container(
+      margin: EdgeInsets.only(bottom: 50),
+      child: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => InputPage()),
+          ).then((_) => _loadEvents());
+        },
+      ),
     );
   }
 
