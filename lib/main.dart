@@ -8,7 +8,7 @@ import 'input.dart';
 import 'timeline.dart';
 import 'dart:ui' as ui;
 import 'settings.dart';
-import 'event.dart';  // Event クラスをインポート
+import 'event.dart';
 import 'event_storage_service.dart';
 
 void main() async {
@@ -89,10 +89,13 @@ class ClockScreen extends StatefulWidget {
 class _ClockScreenState extends State<ClockScreen> {
   DateTime currentDate = DateTime.now();
   bool showColon = true;
+  bool showTaskTime = false;
   late Timer timer;
   final EventStorageService _storageService = EventStorageService();
   List<Event> _events = [];
   String? currentSupportMessage;
+  Event? currentEvent;
+  Color backgroundColor = Colors.white;
 
   @override
   void initState() {
@@ -116,6 +119,12 @@ class _ClockScreenState extends State<ClockScreen> {
 
   void _checkCurrentEvent() {
     final now = DateTime.now();
+    setState(() {
+      currentEvent = null;
+      backgroundColor = Colors.white;
+      currentSupportMessage = null;
+    });
+
     for (var event in _events) {
       final startDateTime = DateTime(
         event.date.year,
@@ -134,14 +143,13 @@ class _ClockScreenState extends State<ClockScreen> {
 
       if (now.isAfter(startDateTime) && now.isBefore(endDateTime)) {
         setState(() {
+          currentEvent = event;
+          backgroundColor = event.color;
           currentSupportMessage = event.supportMessage;
         });
         return;
       }
     }
-    setState(() {
-      currentSupportMessage = null;
-    });
   }
 
   @override
@@ -211,22 +219,64 @@ class _ClockScreenState extends State<ClockScreen> {
   }
 
   Widget buildClock() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: CustomPaint(
-        painter: ClockPainter(),
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          child: Center(
-            child: Text(
-              '${currentDate.hour.toString().padLeft(2, '0')}:${currentDate.minute.toString().padLeft(2, '0')}',
-              style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          showTaskTime = !showTaskTime;
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.all(16),
+        child: CustomPaint(
+          painter: ClockPainter(
+            currentTime: currentDate,
+            backgroundColor: backgroundColor,
+            currentEvent: currentEvent,
+            showTaskTime: showTaskTime,
+          ),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _getDisplayTime(),
+                    style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                  ),
+                  if (currentEvent != null) ...[
+                    SizedBox(height: 20),
+                    Text(
+                      currentEvent!.name,
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      currentEvent!.memo,
+                      style: TextStyle(fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _getDisplayTime() {
+    if (!showTaskTime || currentEvent == null) {
+      return '${currentDate.hour.toString().padLeft(2, '0')}:${currentDate.minute.toString().padLeft(2, '0')}';
+    } else {
+      final startTime = currentEvent!.startTime;
+      final endTime = currentEvent!.endTime;
+      return '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+    }
   }
 
   Widget buildAddButton() {
@@ -243,8 +293,18 @@ class _ClockScreenState extends State<ClockScreen> {
 
   String _getMonthName(int month) {
     const monthNames = [
-      '1月', '2月', '3月', '4月', '5月', '6月',
-      '7月', '8月', '9月', '10月', '11月', '12月'
+      '1月',
+      '2月',
+      '3月',
+      '4月',
+      '5月',
+      '6月',
+      '7月',
+      '8月',
+      '9月',
+      '10月',
+      '11月',
+      '12月'
     ];
     return monthNames[month - 1];
   }
@@ -262,33 +322,71 @@ class _ClockScreenState extends State<ClockScreen> {
 }
 
 class ClockPainter extends CustomPainter {
+  final DateTime currentTime;
+  final Color backgroundColor;
+  final Event? currentEvent;
+  final bool showTaskTime;
+
+  ClockPainter({
+    required this.currentTime,
+    required this.backgroundColor,
+    required this.currentEvent,
+    required this.showTaskTime,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = min(size.width, size.height) / 2;
 
-    final paint = Paint()
+    // 背景を描画
+    final backgroundPaint = Paint()..color = backgroundColor;
+    canvas.drawCircle(center, radius, backgroundPaint);
+
+    // 時計の外枠を描画
+    final outlinePaint = Paint()
       ..color = Colors.grey[300]!
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
-    canvas.drawCircle(center, radius, paint);
+    canvas.drawCircle(center, radius, outlinePaint);
 
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: '0',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      ),
-      textDirection: ui.TextDirection.ltr,
+    // プログレスバーを描画
+    final progressPaint = Paint()
+      ..color = Colors.orange
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round;
+
+    double progress;
+    if (showTaskTime && currentEvent != null) {
+      final startTime = _timeOfDayToDateTime(currentEvent!.startTime);
+      final endTime = _timeOfDayToDateTime(currentEvent!.endTime);
+      final totalDuration = endTime.difference(startTime).inSeconds;
+      final elapsedDuration = currentTime.difference(startTime).inSeconds;
+      progress = elapsedDuration / totalDuration;
+    } else {
+      progress = (currentTime.hour * 3600 +
+              currentTime.minute * 60 +
+              currentTime.second) /
+          (24 * 3600);
+    }
+
+    final sweepAngle = 2 * pi * progress;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2,
+      sweepAngle,
+      false,
+      progressPaint,
     );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        center.dx - textPainter.width / 2,
-        center.dy - radius + 15,
-      ),
-    );
+
+    // 時間のマーカーを描画
+    final markerPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
 
     for (int i = 0; i < 24; i++) {
       final angle = i * (2 * pi / 24) - pi / 2;
@@ -303,12 +401,12 @@ class ClockPainter extends CustomPainter {
         center.dy + radius * sin(angle),
       );
 
-      canvas.drawLine(start, end, paint);
+      canvas.drawLine(start, end, markerPaint);
 
-      if (i % 6 == 0 && i != 0) {
+      if (i % 6 == 0) {
         final textPainter = TextPainter(
           text: TextSpan(
-            text: i.toString(),
+            text: i == 0 ? '24' : i.toString(),
             style: TextStyle(color: Colors.black, fontSize: 16),
           ),
           textDirection: ui.TextDirection.ltr,
@@ -325,8 +423,14 @@ class ClockPainter extends CustomPainter {
     }
   }
 
+  DateTime _timeOfDayToDateTime(TimeOfDay timeOfDay) {
+    final now = DateTime.now();
+    return DateTime(
+        now.year, now.month, now.day, timeOfDay.hour, timeOfDay.minute);
+  }
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
+    return true;
   }
 }

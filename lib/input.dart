@@ -15,7 +15,7 @@ class _InputPageState extends State<InputPage> {
   final _storageService = EventStorageService();
   String eventName = '';
   String memo = '';
-  String supportMessage = '';  
+  String supportMessage = '';
   Color selectedColor = Colors.purple;
   DateTime selectedDate = DateTime.now();
   TimeOfDay startTime = TimeOfDay.now();
@@ -142,7 +142,8 @@ class _InputPageState extends State<InputPage> {
               SizedBox(height: 10),
               RGBColorPicker(
                 selectedColor: selectedColor,
-                onColorChanged: (color) => setState(() => selectedColor = color),
+                onColorChanged: (color) =>
+                    setState(() => selectedColor = color),
               ),
             ],
           ),
@@ -179,7 +180,7 @@ class _InputPageState extends State<InputPage> {
         startTime: startTime,
         endTime: endTime,
         memo: memo,
-        supportMessage: supportMessage, 
+        supportMessage: supportMessage,
         color: selectedColor,
       );
 
@@ -234,7 +235,8 @@ class _RGBColorPickerState extends State<RGBColorPicker> {
             Expanded(
               child: Container(
                 height: 50,
-                color: Color.fromRGBO(red.round(), green.round(), blue.round(), 1),
+                color:
+                    Color.fromRGBO(red.round(), green.round(), blue.round(), 1),
               ),
             ),
           ],
@@ -256,7 +258,8 @@ class _RGBColorPickerState extends State<RGBColorPicker> {
     );
   }
 
-  Widget buildColorSlider(String label, double value, Color color, ValueChanged<double> onChanged) {
+  Widget buildColorSlider(
+      String label, double value, Color color, ValueChanged<double> onChanged) {
     return Row(
       children: [
         Container(
