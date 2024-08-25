@@ -44,6 +44,83 @@ class MainNavigationScreen extends StatefulWidget {
   _MainNavigationScreenState createState() => _MainNavigationScreenState();
 }
 
+class AnimatedSupportMessage extends StatefulWidget {
+  final String message;
+
+  AnimatedSupportMessage({required this.message});
+
+  @override
+  _AnimatedSupportMessageState createState() => _AnimatedSupportMessageState();
+}
+
+class _AnimatedSupportMessageState extends State<AnimatedSupportMessage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Opacity(
+            opacity: _opacityAnimation.value,
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.2),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Text(
+                widget.message,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
@@ -95,6 +172,7 @@ class _ClockScreenState extends State<ClockScreen> {
   List<Event> _events = [];
   String? currentSupportMessage;
   Event? currentEvent;
+  Event? nextEvent;
   Color backgroundColor = Colors.white;
 
   @override
@@ -106,8 +184,118 @@ class _ClockScreenState extends State<ClockScreen> {
         currentDate = DateTime.now();
         showColon = !showColon;
         _checkCurrentEvent();
+        _checkNextEvent();
       });
     });
+  }
+
+  void _checkNextEvent() {
+    final now = DateTime.now();
+    setState(() {
+      nextEvent = null;
+    });
+
+    for (var event in _events) {
+      final startDateTime = DateTime(
+        event.date.year,
+        event.date.month,
+        event.date.day,
+        event.startTime.hour,
+        event.startTime.minute,
+      );
+
+      if (startDateTime.isAfter(now)) {
+        setState(() {
+          nextEvent = event;
+        });
+        return;
+      }
+    }
+  }
+
+  Widget buildClock() {
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              showTaskTime = !showTaskTime;
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.all(16),
+            child: CustomPaint(
+              painter: ClockPainter(
+                currentTime: currentDate,
+                backgroundColor: backgroundColor,
+                currentEvent: currentEvent,
+                showTaskTime: showTaskTime,
+              ),
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _getDisplayTime(),
+                        style: TextStyle(
+                            fontSize: 40, fontWeight: FontWeight.bold),
+                      ),
+                      if (currentEvent != null) ...[
+                        SizedBox(height: 20),
+                        Text(
+                          currentEvent!.name,
+                          style: TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          currentEvent!.memo,
+                          style: TextStyle(fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (nextEvent != null)
+          Positioned(
+            left: 20,
+            bottom: 20,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: nextEvent!.color.withOpacity(0.7), // ここを変更
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text(
+                    '次:\n${nextEvent!.name}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 3,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Future<void> _loadEvents() async {
@@ -161,18 +349,7 @@ class _ClockScreenState extends State<ClockScreen> {
           buildDateSelector(),
           Expanded(child: buildClock()),
           if (currentSupportMessage != null)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                currentSupportMessage!,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
+            AnimatedSupportMessage(message: currentSupportMessage!),
         ],
       ),
       floatingActionButton: buildAddButton(),
@@ -214,57 +391,6 @@ class _ClockScreenState extends State<ClockScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget buildClock() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          showTaskTime = !showTaskTime;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.all(16),
-        child: CustomPaint(
-          painter: ClockPainter(
-            currentTime: currentDate,
-            backgroundColor: backgroundColor,
-            currentEvent: currentEvent,
-            showTaskTime: showTaskTime,
-          ),
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _getDisplayTime(),
-                    style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
-                  ),
-                  if (currentEvent != null) ...[
-                    SizedBox(height: 20),
-                    Text(
-                      currentEvent!.name,
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      currentEvent!.memo,
-                      style: TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -353,7 +479,7 @@ class ClockPainter extends CustomPainter {
 
     // プログレスバーを描画
     final progressPaint = Paint()
-      ..color = Colors.orange
+      ..color = showTaskTime ? Colors.orange : Colors.blue // ここを変更
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 class TimelinePage extends StatefulWidget {
   @override
@@ -6,48 +7,149 @@ class TimelinePage extends StatefulWidget {
 }
 
 class _TimelinePageState extends State<TimelinePage> {
-  List<StickyNoteData> notes = [
-    StickyNoteData(
-      id: '1',
-      color: Color(0xFF5DE4E6),
-      position: Offset(20, 50),
-      title: "ミーティング",
-      content: "プロジェクト進捗確認",
-      startTime: "10:00",
-      endTime: "11:30",
-    ),
-    StickyNoteData(
-      id: '2',
-      color: Color(0xFFFFEE5C),
-      position: Offset(200, 80),
-      title: "報告書作成",
-      content: "先週の営業結果まとめ",
-      startTime: "14:00",
-      endTime: "16:00",
-    ),
-    StickyNoteData(
-      id: '3',
-      color: Color(0xFFFF97A5),
-      position: Offset(50, 250),
-      title: "顧客訪問",
-      content: "新規提案のプレゼン",
-      startTime: "13:00",
-      endTime: "15:00",
-    ),
-    StickyNoteData(
-      id: '4',
-      color: Color(0xFFB6F77F),
-      position: Offset(230, 280),
-      title: "チーム会議",
-      content: "週次タスク確認",
-      startTime: "09:30",
-      endTime: "10:30",
-    ),
+  List<List<StickyNoteData>> weeklyNotes = [
+    // 1週目
+    [
+      StickyNoteData(
+        id: '1',
+        color: Color(0xFF5DE4E6),
+        position: Offset(20, 50),
+        title: "朝のジョギング",
+        content: "30分のランニング",
+        startTime: "06:00",
+        endTime: "06:30",
+      ),
+      StickyNoteData(
+        id: '2',
+        color: Color(0xFFFFEE5C),
+        position: Offset(200, 80),
+        title: "買い物",
+        content: "野菜と牛乳を購入",
+        startTime: "17:00",
+        endTime: "18:00",
+      ),
+      StickyNoteData(
+        id: '3',
+        color: Color(0xFFFF97A5),
+        position: Offset(50, 250),
+        title: "読書",
+        content: "新しい小説を30ページ",
+        startTime: "21:00",
+        endTime: "22:00",
+      ),
+      StickyNoteData(
+        id: '4',
+        color: Color(0xFFB6F77F),
+        position: Offset(230, 280),
+        title: "料理",
+        content: "チキンカレーを作る",
+        startTime: "19:00",
+        endTime: "20:00",
+      ),
+    ],
+    // 2週目
+    [
+      StickyNoteData(
+        id: '5',
+        color: Color(0xFF5DE4E6),
+        position: Offset(20, 50),
+        title: "瞑想",
+        content: "15分の集中瞑想",
+        startTime: "07:00",
+        endTime: "07:15",
+      ),
+      StickyNoteData(
+        id: '6',
+        color: Color(0xFFFFEE5C),
+        position: Offset(200, 80),
+        title: "掃除",
+        content: "リビングの大掃除",
+        startTime: "10:00",
+        endTime: "12:00",
+      ),
+      StickyNoteData(
+        id: '7',
+        color: Color(0xFFFF97A5),
+        position: Offset(50, 250),
+        title: "映画鑑賞",
+        content: "新作アクション映画",
+        startTime: "20:00",
+        endTime: "22:30",
+      ),
+      StickyNoteData(
+        id: '8',
+        color: Color(0xFFB6F77F),
+        position: Offset(230, 280),
+        title: "ガーデニング",
+        content: "新しい花を植える",
+        startTime: "15:00",
+        endTime: "16:30",
+      ),
+    ],
+    // 3週目
+    [
+      StickyNoteData(
+        id: '9',
+        color: Color(0xFF5DE4E6),
+        position: Offset(20, 50),
+        title: "ヨガ",
+        content: "45分のモーニングヨガ",
+        startTime: "06:30",
+        endTime: "07:15",
+      ),
+      StickyNoteData(
+        id: '10',
+        color: Color(0xFFFFEE5C),
+        position: Offset(200, 80),
+        title: "語学学習",
+        content: "フランス語30分",
+        startTime: "18:00",
+        endTime: "18:30",
+      ),
+      StickyNoteData(
+        id: '11',
+        color: Color(0xFFFF97A5),
+        position: Offset(50, 250),
+        title: "友人とのビデオ通話",
+        content: "海外の友人と近況報告",
+        startTime: "21:00",
+        endTime: "22:00",
+      ),
+      StickyNoteData(
+        id: '12',
+        color: Color(0xFFB6F77F),
+        position: Offset(230, 280),
+        title: "新しいレシピに挑戦",
+        content: "ベジタリアンラザニア",
+        startTime: "19:00",
+        endTime: "20:30",
+      ),
+    ],
   ];
+
+  int currentWeekIndex = 0;
+  late Timer timer;
+
+  @override
+  void initState() {
+    super.initState();
+    timer = Timer.periodic(Duration(seconds: 5), (Timer t) {
+      setState(() {
+        currentWeekIndex = (currentWeekIndex + 1) % weeklyNotes.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    timer.cancel();
+    super.dispose();
+  }
 
   void addReaction(String noteId) {
     setState(() {
-      var note = notes.firstWhere((note) => note.id == noteId);
+      var note =
+          weeklyNotes[currentWeekIndex].firstWhere((note) => note.id == noteId);
       if (note.reactionCount == 0) {
         note.reactionCount = 1;
       } else {
@@ -65,18 +167,19 @@ class _TimelinePageState extends State<TimelinePage> {
       body: Stack(
         children: [
           GridPaperBackground(),
-          ...notes.map((note) => LongPressDraggableStickyNote(
-                key: ObjectKey(note),
-                note: note,
-                onDragEnd: (Offset newPosition) {
-                  setState(() {
-                    note.position = newPosition;
-                  });
-                },
-                onTap: () {
-                  addReaction(note.id);
-                },
-              )),
+          ...weeklyNotes[currentWeekIndex]
+              .map((note) => LongPressDraggableStickyNote(
+                    key: ObjectKey(note),
+                    note: note,
+                    onDragEnd: (Offset newPosition) {
+                      setState(() {
+                        note.position = newPosition;
+                      });
+                    },
+                    onTap: () {
+                      addReaction(note.id);
+                    },
+                  )),
         ],
       ),
     );
