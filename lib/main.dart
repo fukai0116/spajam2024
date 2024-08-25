@@ -8,7 +8,7 @@ import 'input.dart';
 import 'timeline.dart';
 import 'dart:ui' as ui;
 import 'settings.dart';
-import 'event.dart'; // Event クラスをインポート
+import 'event.dart';
 import 'event_storage_service.dart';
 
 void main() async {
