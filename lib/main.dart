@@ -8,6 +8,8 @@ import 'input.dart';
 import 'timeline.dart';
 import 'dart:ui' as ui;
 import 'settings.dart';
+import 'event.dart';  // Event クラスをインポート
+import 'event_storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,15 +90,57 @@ class _ClockScreenState extends State<ClockScreen> {
   DateTime currentDate = DateTime.now();
   bool showColon = true;
   late Timer timer;
+  final EventStorageService _storageService = EventStorageService();
+  List<Event> _events = [];
+  String? currentSupportMessage;
 
   @override
   void initState() {
     super.initState();
+    _loadEvents();
     timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         currentDate = DateTime.now();
         showColon = !showColon;
+        _checkCurrentEvent();
       });
+    });
+  }
+
+  Future<void> _loadEvents() async {
+    final events = await _storageService.getEvents();
+    setState(() {
+      _events = events;
+    });
+  }
+
+  void _checkCurrentEvent() {
+    final now = DateTime.now();
+    for (var event in _events) {
+      final startDateTime = DateTime(
+        event.date.year,
+        event.date.month,
+        event.date.day,
+        event.startTime.hour,
+        event.startTime.minute,
+      );
+      final endDateTime = DateTime(
+        event.date.year,
+        event.date.month,
+        event.date.day,
+        event.endTime.hour,
+        event.endTime.minute,
+      );
+
+      if (now.isAfter(startDateTime) && now.isBefore(endDateTime)) {
+        setState(() {
+          currentSupportMessage = event.supportMessage;
+        });
+        return;
+      }
+    }
+    setState(() {
+      currentSupportMessage = null;
     });
   }
 
@@ -108,6 +152,19 @@ class _ClockScreenState extends State<ClockScreen> {
           SizedBox(height: 40),
           buildDateSelector(),
           Expanded(child: buildClock()),
+          if (currentSupportMessage != null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                currentSupportMessage!,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
         ],
       ),
       floatingActionButton: buildAddButton(),
@@ -179,25 +236,15 @@ class _ClockScreenState extends State<ClockScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => InputPage()),
-        );
+        ).then((_) => _loadEvents());
       },
     );
   }
 
   String _getMonthName(int month) {
     const monthNames = [
-      '1月',
-      '2月',
-      '3月',
-      '4月',
-      '5月',
-      '6月',
-      '7月',
-      '8月',
-      '9月',
-      '10月',
-      '11月',
-      '12月'
+      '1月', '2月', '3月', '4月', '5月', '6月',
+      '7月', '8月', '9月', '10月', '11月', '12月'
     ];
     return monthNames[month - 1];
   }
@@ -205,6 +252,12 @@ class _ClockScreenState extends State<ClockScreen> {
   String _getDayOfWeek(int day) {
     const dayNames = ['月', '火', '水', '木', '金', '土', '日'];
     return dayNames[day - 1];
+  }
+
+  @override
+  void dispose() {
+    timer.cancel();
+    super.dispose();
   }
 }
 
@@ -221,7 +274,6 @@ class ClockPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, paint);
 
-    // 0を円の真上の内側に描画
     final textPainter = TextPainter(
       text: TextSpan(
         text: '0',
