@@ -15,6 +15,7 @@ class _InputPageState extends State<InputPage> {
   final _storageService = EventStorageService();
   String eventName = '';
   String memo = '';
+  String supportMessage = '';  
   Color selectedColor = Colors.purple;
   DateTime selectedDate = DateTime.now();
   TimeOfDay startTime = TimeOfDay.now();
@@ -177,7 +178,8 @@ class _InputPageState extends State<InputPage> {
         date: selectedDate,
         startTime: startTime,
         endTime: endTime,
-        memo: memo + '\n\n応援メッセージ: ' + supportMessage,
+        memo: memo,
+        supportMessage: supportMessage, 
         color: selectedColor,
       );
 

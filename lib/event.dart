@@ -7,6 +7,7 @@ class Event {
   TimeOfDay startTime;
   TimeOfDay endTime;
   String memo;
+  String supportMessage;  // 新しく追加されたフィールド
   Color color;
 
   Event({
@@ -16,6 +17,7 @@ class Event {
     required this.startTime,
     required this.endTime,
     required this.memo,
+    required this.supportMessage,  // コンストラクタに追加
     required this.color,
   });
 
@@ -27,6 +29,7 @@ class Event {
       startTime: TimeOfDay(hour: json['startTime']['hour'], minute: json['startTime']['minute']),
       endTime: TimeOfDay(hour: json['endTime']['hour'], minute: json['endTime']['minute']),
       memo: json['memo'],
+      supportMessage: json['supportMessage'],  // JSONからの読み込みに追加
       color: Color(json['color']),
     );
   }
@@ -39,6 +42,7 @@ class Event {
       'startTime': {'hour': startTime.hour, 'minute': startTime.minute},
       'endTime': {'hour': endTime.hour, 'minute': endTime.minute},
       'memo': memo,
+      'supportMessage': supportMessage,  // JSONへの変換に追加
       'color': color.value,
     };
   }
